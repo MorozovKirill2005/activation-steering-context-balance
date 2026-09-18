@@ -1,4 +1,4 @@
-# Title
+# Activation Steering for Context-Balanced Synthetic Data
 
 <!-- Change `kisnikser/m1p-template` to `intsystems/your-repository`-->
 [![License](https://badgen.net/github/license/kisnikser/m1p-template?color=green)](https://github.com/kisnikser/m1p-template/blob/main/LICENSE)
@@ -9,15 +9,15 @@
 <table>
     <tr>
         <td align="left"> <b> Author </b> </td>
-        <td> Name Surname </td>
+        <td> Kirill Morozov </td>
     </tr>
     <tr>
         <td align="left"> <b> Consultant </b> </td>
-        <td> Name Surname, PhD/DSc </td>
+        <td> Sergey Karpukhin </td>
     </tr>
     <tr>
         <td align="left"> <b> Advisor </b> </td>
-        <td> Name Surname, PhD/DSc </td>
+        <td> Aibek Alanov </td>
     </tr>
 </table>
 
