@@ -30,7 +30,7 @@
 
 ## Abstract
 
-TODO
+Training models on data with group imbalance, for example, “class–context” combinations, leads to a drop in quality on rare subgroups and a decrease in the fairness of predictions. One way to combat this is to supplement the training dataset with synthetic data. However, generating data via Text-to-Image (T2I) models using only a text prompt does not provide reliable control over the context and attributes of the object. In this work, we propose a framework for controlled synthetic data generation to balance groups using activation steering in Diffusion Transformer (DiT). By analogy with SHIFT, we construct steering vectors in the DiT activation space that correspond to the contexts of the original dataset, and we use them to generate examples of rare “class–context” combinations. In experiments on the NICO++ dataset, we train a CNN classifier on the original train set, balance the subsample using synthetic data while maintaining the overall size of the training set, and compare average accuracy and worst-group accuracy (WGA) with the baseline. We test the hypothesis that such controlled generation will improve WGA and fairness metrics without sacrificing average quality. The results obtained demonstrate that the proposed method can be used to enrich training data with synthetic data derived from T2I models, with the aim of improving the fairness of trained classifiers.
 
 ## Citation
 
