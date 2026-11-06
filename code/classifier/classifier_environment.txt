@@ -1,0 +1,8 @@
+conda create -n activation_steering_project python=3.10 -y
+conda activate activation_steering_project
+
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+
+pip install numpy pandas scikit-learn Pillow gdown comet_ml tqdm
+
+pip install matplotlib

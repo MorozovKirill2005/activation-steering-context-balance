@@ -1,0 +1,13 @@
+conda create -n activation_steering_shift python=3.10 pip -y
+conda activate activation_steering_shift
+
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+pip install clean-fid torchmetrics
+
+pip uninstall numpy
+pip install numpy==1.26.4
+
+pip uninstall -y torch torchvision torchaudio
+pip install torch==2.14.1 --index-url https://download.pytorch.org/whl/cu126
+pip install torchvision --index-url https://download.pytorch.org/whl/cu126

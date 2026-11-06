@@ -1,0 +1,49 @@
+{
+    "project_name": "Activation Steering",
+    "experiment_name": "New_Baseline",
+    "model": {
+        "model_name": "resnet_sup_in1k",
+        "pretrained": true,
+        "freeze_bn_statistics": true
+    },
+    "optimizer": {
+        "name": "SGD",
+        "parameters": {
+            "lr": 1e-3,
+            "momentum": 0.9,
+            "weight_decay": 1e-4
+        }
+    },
+    "criterion": "CrossEntropyLoss",
+    "n_epochs": 60,
+    "model_selection": {
+        "metric": "AverageGroupAccuracy",
+        "mode": "max"
+    },
+    "logging_interval": 100,
+    "seed": 42,
+    "data": {
+        "gen_split": true,
+        "data_dir": "./data/nicopp",
+        "output_dir": "./data",
+        "metadata_prefix": "metadata",
+        "download": false,
+        "split_seed": 42,
+        "transform": {
+            "train": "base",
+            "val": "base",
+            "test": "base"
+        },
+        "has_synthetic": false,
+        "batch_size": {
+            "train": 108,
+            "val": 256,
+            "test": 256
+        },
+        "balance_synthetic": false,
+        "num_workers": 8
+    },
+    "log_dir": "logs",
+    "verbose": true,
+    "logging_online": false
+}
