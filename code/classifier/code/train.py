@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from .visualization import get_group_accuracy_heatmap, get_class_accuracy_bar, get_dataset_distribution_heatmap
-from .metrics import metrics, get_selection_value, is_better_metric
+from .metrics import metrics, get_selection_value, is_better_metric, metrics_by_k
 
 
 DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -46,11 +46,19 @@ def log_val_metrics(
     logger
 ):
     for metric_name, metric_value in val_metrics.items():
+        if metric_name == "metrics_by_k":
+            continue
         logger.log_metric(
             f"{split}/{metric_name}",
             metric_value,
             step=epoch,
         )
+    
+    for k, values in val_metrics.get("metrics_by_k", {}).items():
+        logger.log_metrics({
+            f"{split}_by_k/{name}": value
+            for name, value in values.items()
+        }, step=int(k))
 
     group_accuracy_figure = get_group_accuracy_heatmap(
         group_accuracy=group_accuracy,
@@ -138,13 +146,16 @@ def val_epoch(
     network,
     val_loader,
     criterion,
-    device=DEVICE
+    device=DEVICE,
+    save_path=None,
+    calculate_metrics_by_k=False
 ):
     network.eval()
 
     total_loss = 0.0
     total_samples = 0
 
+    all_logits = []
     predictions = []
     class_ids = []
     context_ids = []
@@ -155,6 +166,9 @@ def val_epoch(
 
         logits = network(images)
         losses = criterion(logits, labels)
+
+        if save_path is not None:
+            all_logits.append(logits.float().cpu())
 
         predict = logits.argmax(dim=1)
 
@@ -175,6 +189,27 @@ def val_epoch(
         context_ids=context_ids,
         group_ids=group_ids
     )
+
+    if calculate_metrics_by_k:
+        val_metrics["metrics_by_k"] = metrics_by_k(
+            predictions=predictions,
+            class_ids=class_ids,
+            context_ids=context_ids,
+            group_ids=group_ids,
+        )
+
+    if save_path is not None:
+        torch.save({
+            "logits": torch.cat(all_logits),
+            "predictions": torch.tensor(predictions),
+            "class_ids": torch.tensor(class_ids),
+            "context_ids": torch.tensor(context_ids),
+            "group_ids": torch.tensor(group_ids),
+            "paths": [
+                str(path) for path in val_loader.dataset.paths
+            ],
+            "metrics": val_metrics,
+        }, save_path)
 
     return val_loss, val_metrics, group_accuracy, class_accuracy
 
@@ -276,6 +311,8 @@ def train_val(
         if verbose:
             print(f"Train_loss: {train_loss:.6f}, Val_loss: {val_loss:.6f}")
             for metric_name, metric_value in val_metrics.items():
+                if metric_name == "metrics_by_k":
+                    continue
                 print(f"Val_{metric_name}: {metric_value:.6f}")
 
         selection_value = get_selection_value(val_loss, val_metrics, selection_metric)
@@ -301,11 +338,23 @@ def train_val(
     checkpoint = torch.load(best_model_path, map_location=device)
     network.load_state_dict(checkpoint["model_state_dict"])
 
+    results_dir = os.path.dirname(best_model_path)
+
+    val_epoch(
+        network=network,
+        val_loader=val_loader,
+        criterion=criterion,
+        device=device,
+        save_path=os.path.join(results_dir, "predict_val.pt")
+    )
+
     _, test_metrics, test_group_accuracy, test_class_accuracy = val_epoch(
         network=network,
         val_loader=test_loader,
         criterion=criterion,
-        device=device
+        device=device,
+        save_path=os.path.join(results_dir, "predict_test.pt"),
+        calculate_metrics_by_k=True
     )
     if logger is not None:
         log_val_metrics(
@@ -333,4 +382,6 @@ def train_val(
     if verbose:
         print(f"\nTest result")
         for metric_name, metric_value in test_metrics.items():
+            if metric_name == "metrics_by_k":
+                continue
             print(f"{metric_name}: {metric_value:.6f}")

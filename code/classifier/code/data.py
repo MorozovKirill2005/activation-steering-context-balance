@@ -2,6 +2,7 @@ import os
 from typing import Callable, Optional
 import pandas as pd
 from PIL import Image
+import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 
@@ -10,6 +11,8 @@ import gdown
 import random
 from pathlib import Path
 from zipfile import ZipFile
+
+from .synthetic import create_train_synth_csv
 
 
 NUM_CLASSES = 60
@@ -166,7 +169,8 @@ class NICOPPDataLoader:
         batch_size: int,
         shuffle: bool = True,
         balance_synthetic: bool = False,
-        num_workers: int = 0
+        num_workers: int = 0,
+        seed: Optional[int] = None
     ):
         self.dataset = dataset
         self.batch_size = batch_size
@@ -177,11 +181,16 @@ class NICOPPDataLoader:
         if self.balance_synthetic:
             pass
 
+        self.generator = None
+        if seed is not None:
+            self.generator = torch.Generator().manual_seed(seed)
+
         self.loader = DataLoader(
             dataset=self.dataset,
             batch_size=self.batch_size,
             shuffle=self.shuffle,
             num_workers=self.num_workers,
+            generator=self.generator
         )
 
     def __len__(self):
@@ -201,8 +210,24 @@ def data_load(config):
             seed=config["split_seed"]
         )
 
+    train_csv = f'{config["output_dir"]}/{config["metadata_prefix"]}_train.csv'
+    if config["has_synthetic"]:
+        synthetic = config["synthetic"]
+        mode = synthetic["mode"]
+        synth_suffix = synthetic["synth_suffix"]
+        if synth_suffix != "":
+            synth_suffix = "_" + synth_suffix
+        create_train_synth_csv(
+            output_dir=config["output_dir"],
+            mode=mode,
+            synth_suffix=synth_suffix,
+            seed=synthetic["downsample_seed"],
+            metadata_prefix=config["metadata_prefix"],
+        )
+        train_csv = f'{config["output_dir"]}/{config["metadata_prefix"]}_train_synth_{mode}{synth_suffix}.csv'
+
     train_dataset = NICOPPDataset(
-        csv_path=f'{config["output_dir"]}/{config["metadata_prefix"]}_train.csv',
+        csv_path=train_csv,
         data_dir=config["data_dir"],
         transform=TRANSFORMS[config["transform"]["train"]],
         has_synthetic=config["has_synthetic"]
@@ -211,13 +236,11 @@ def data_load(config):
         csv_path=f'{config["output_dir"]}/{config["metadata_prefix"]}_val.csv',
         data_dir=config["data_dir"],
         transform=TRANSFORMS[config["transform"]["val"]],
-        has_synthetic=config["has_synthetic"]
     )
     test_dataset = NICOPPDataset(
         csv_path=f'{config["output_dir"]}/{config["metadata_prefix"]}_test.csv',
         data_dir=config["data_dir"],
-        transform=TRANSFORMS[config["transform"]["test"]],
-        has_synthetic=config["has_synthetic"]
+        transform=TRANSFORMS[config["transform"]["test"]]
     )
 
     train_loader = NICOPPDataLoader(
@@ -225,7 +248,8 @@ def data_load(config):
         batch_size=config["batch_size"]["train"],
         shuffle=True,
         balance_synthetic=config["balance_synthetic"],
-        num_workers=config["num_workers"]
+        num_workers=config["num_workers"],
+        seed=config["train_dataloader_seed"]
     )
     val_loader = NICOPPDataLoader(
         dataset=val_dataset,

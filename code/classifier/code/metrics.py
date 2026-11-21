@@ -107,6 +107,7 @@ def get_selection_value(
 
     return val_metrics[metric_name]
 
+
 def is_better_metric(
     current_value: float,
     best_value: float,
@@ -116,3 +117,29 @@ def is_better_metric(
         return current_value > best_value
     if mode == "min":
         return current_value < best_value
+
+
+def metrics_by_k(predictions, class_ids, context_ids, group_ids):
+    predictions = np.asarray(predictions)
+    class_ids = np.asarray(class_ids)
+    context_ids = np.asarray(context_ids)
+    group_ids = np.asarray(group_ids)
+
+    groups, counts = np.unique(group_ids, return_counts=True)
+    k_values = [1] + [
+        int(n) + 1 for n in np.unique(counts)[:-1]
+    ]
+
+    result = {}
+    for k in k_values:
+        mask = np.isin(group_ids, groups[counts >= k])
+
+        values, _, _ = metrics(
+            predictions[mask],
+            class_ids[mask],
+            context_ids[mask],
+            group_ids[mask],
+        )
+        result[k] = values
+
+    return result
